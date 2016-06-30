@@ -1,0 +1,135 @@
+
+<template>
+    <scroller class="list">
+       <text class="title">{{data.title}}</text>
+       <text class="title_2">
+           {{data.time}}
+           {{data.counter}}次阅读
+           {{data.counter}}次推荐
+            稿源：{{data.source}}
+           {{data.comments}} 条评论
+       </text>
+       <text class="body_text">
+          {{data.bodytext}}
+       </text>
+    </scroller>
+</template>
+
+<style>
+  .title {
+       text-align: center ;
+       font-size: 35;
+       font-weight: bold;
+       color: #036;
+       padding-top:10;
+       padding-bottom:10;
+   }
+  .title_2 {
+         text-align: center ;
+         font-size: 15;
+         font-weight: bold;
+         color: #7e7e7e;
+         padding-bottom:10;
+  }
+
+  .body_text{
+    padding:20;
+  }
+</style>
+
+<script>
+    var apis = require('./api');
+
+    require('weex-components');
+
+    module.exports = {
+        data: {
+            sid: '',
+            data: {},
+        },
+
+        created: function () {
+            this.get_sid();
+            this.fetchData();
+        },
+        methods: {
+
+            get_sid: function(){
+
+                var bundleUrl = this.$getConfig().bundleUrl
+
+                try {
+    //              this.sid = bundleUrl.split('?sid=')[1];
+
+                    var re          = /=\d.*&/;
+                    str             = bundleUrl.match(re);
+                    str             = str[0];
+                    re              = /\d+/;
+                    str             = str.match(re);
+                    this.sid        = str[0]
+
+                    console.log('-----', this.sid);
+                    // this.toast(this.sid,5);
+
+                } catch (e) {
+                    console.log('-----', e)
+                    this.sid = 'http://qq.com'
+                }
+            },
+            fetchData: function() {
+                var self = this;
+                self.data = {};
+
+                apis.getNewsContent( self.sid , function (retdata) {
+
+                    if ( retdata['status'] == "success" ){
+
+                        try {
+                            self.data = retdata.result;
+                            // self.toast(self.data.title + "",1);
+
+                        } catch (e) {
+                            self.toast(e.message,1);
+                        }
+                    }
+
+                });
+            },
+            toast: function(msg, duration) {
+                    if (!msg || typeof msg !== 'string') {
+                      msg = 'I am Toast show!';
+                    }
+
+                    duration = duration || 2;
+                    this.$call('modal', 'toast', {
+                      'message': msg,
+                      'duration': duration
+                    });
+            },
+            goback: function() {
+                var $webview = require('@weex-module/webview');
+                var webElement = this.$el('webview');
+                $webview.goBack(webElement.ref);
+             },
+            goforward: function() {
+                var $webview = require('@weex-module/webview');
+                var webElement = this.$el('webview');
+                $webview.goForward(webElement.ref);
+            },
+            refresh: function() {
+                var $webview = require('@weex-module/webview');
+                var webElement = this.$el('webview');
+                $webview.reload(webElement.ref);
+            },
+            startload: function(e) {
+
+            },
+            finishload: function(e) {
+
+            },
+            failload: function(e) {
+
+            }
+        }
+    }
+</script>

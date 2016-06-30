@@ -1,0 +1,190 @@
+<style>
+
+.list {
+    width: 750;
+    height: 1200;
+}
+
+.row {
+    width: 750;
+    background-color: #fafafa;
+
+    padding-bottom: 20;
+
+    border-bottom-width: 1;
+    border-bottom-color: #ccc;
+
+    align-items: center;
+    flex-direction: row;
+}
+
+
+.item-image{
+    flex: 1;
+    width:100;
+    height:100;
+    max-width: 100;
+    max-height: 100;
+    padding-right:5;
+    margin-top:70;
+}
+
+
+.text-box {
+    padding-top: 20;
+    padding-left: 20;
+    padding-right: 10;
+
+    flex: 2;
+}
+    .text-box-title {
+        font-size: 28;
+        color: #036;
+        font-weight: bold;
+    }
+    .text-box-time-user {
+        font-size: 16;
+        color: #417daf;
+        padding: 5px;
+    }
+    .text-box-desc {
+          padding-top: 2px;
+          padding-bottom: 2px;
+          font-size:22px;
+          line-height: 22px;
+          color: #333;
+          word-break: break-all;
+          word-wrap: break-word;
+    }
+
+</style>
+
+
+<template>
+    <div>
+        <list class="list" onloadmore="fetchData" loadmoreoffset=2000>
+            <cell class="row" repeat="{{itemList}}" index="{{$sid}}" onClick="go_detail(sid)">
+                    <div class="text-box">
+                        <text class="text-box-title">{{title}}</text>
+                        <text class="text-box-time-user">发布于 {{pubtime}} || {{counter}} 次阅读</text>
+                        <text class="text-box-desc">{{summary}}</text>
+                    </div>
+
+                    <image class="item-image" src="{{thumb}}"></image>
+            </cell>
+        </list>
+    </div>
+</template>
+<script>
+
+var apis = require('./api');
+
+module.exports = {
+    data: {
+        dir:"",
+        baseURL:"",
+        itemList: []
+    },
+    created: function() {
+        this.getBaseURL()
+        this.fetchData()
+    },
+    methods: {
+        toast: function(msg, duration) {
+            if (!msg || typeof msg !== 'string') {
+              msg = 'I am Toast show!';
+            }
+
+            duration = duration || 2;
+            this.$call('modal', 'toast', {
+              'message': msg,
+              'duration': duration
+            });
+        },
+
+        go_detail: function(sid){
+
+            var url = this.baseURL + "showcase/new-fashion/cnbetadetail.js?sid="+ sid;
+
+            var params = {
+                'url': url
+            };
+            var navigator = require('@weex-module/navigator');
+            navigator.push(params, function(e) {
+                // console.log(e)
+            });
+        },
+
+
+        add: function() {
+            this.count++
+            this.fetchData()
+        },
+
+        fetchData: function() {
+
+            var self = this;
+
+			try {
+	            apis.getNewsList(function (retdata) {
+	                // console.log('get', retdata);
+	                self.json = retdata;
+		            // self.toast(retdata+"",1);
+                	
+	                if ( retdata && retdata['status'] == "success" ){
+
+ 	                        if ( self.itemList.length > 0 ) {
+ 	                            self.itemList = self.itemList.concat(retdata["result"])
+ 	                        } else {
+ 	                            self.itemList = retdata["result"]
+ 	                        }
+
+ 	                }else{
+			            self.toast("API 访问出错！",1);
+ 	                	
+ 	                }
+	            });
+	        } catch (e) {
+	            self.toast(e.message,1);
+	        }
+        },
+        getBaseURL: function() {
+          var bundleUrl = this.$getConfig().bundleUrl;
+
+          var nativeBase;
+          var isAndroidAssets = bundleUrl.indexOf('file://assets/') >= 0;
+          var isiOSAssets = bundleUrl.indexOf('file:///') >= 0 && bundleUrl.indexOf('WeexDemo.app') > 0;
+
+
+          if (isAndroidAssets) {
+            nativeBase = 'file://assets/';
+          } else if (isiOSAssets) {
+            // file:///var/mobile/Containers/Bundle/Application/{id}/WeexDemo.app/
+            // file:///Users/{user}/Library/Developer/CoreSimulator/Devices/{id}/data/Containers/Bundle/Application/{id}/WeexDemo.app/
+            nativeBase = bundleUrl.substring(0, bundleUrl.lastIndexOf('/') + 1);
+
+          } else {
+
+            var host = 'localhost:12580';
+            var matches = /\/\/([^\/]+?)\//.exec(this.$getConfig().bundleUrl);
+            if (matches && matches.length >= 2) {
+              host = matches[1];
+            }
+
+            nativeBase = 'http://' + host + '/' + this.dir + '/examples/build/';
+          }
+
+          var h5Base = './' + this.dir + '/build/';
+
+          // in Native
+          var base = nativeBase;
+
+          if (typeof window === 'object') {
+            // in Browser or WebView
+            base = h5Base;
+          }
+          this.baseURL = base;
+        }
+    }
+}
+</script>
